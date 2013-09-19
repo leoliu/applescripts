@@ -73,6 +73,7 @@ on dateFromUT(UTS)
 end dateFromUT")
 
 (defun Notes-accounts ()
+  "Return a list of account names."
   (let ((a (split-string (read (applescript "\
 tell application \"Notes\"
   set XX to {}
@@ -88,6 +89,7 @@ end tell"))
     (mapcar (lambda (x) (split-string x "---")) a)))
 
 (defun Notes-folders (account)
+  "Return a list of folder names in ACCOUNT."
   (let ((f (split-string (read (applescript "\
 tell application \"Notes\"
   set FF to {}
@@ -204,24 +206,28 @@ end tell"))))
 
 (defun Notes-update-from-org ()
   (when (= 3 (org-reduced-level (org-current-level)))
-    (save-restriction
-      (widen)
-      (org-narrow-to-subtree)
-      (let* ((folder-id (org-entry-get-with-inheritance "folder-id"))
-             (elems (Notes-from-org-data (org-element-parse-buffer)))
-             (org-html-text-markup-alist ; for org-export-as
-              (cons '(underline . "<u>%s</u>")
-                    org-html-text-markup-alist))
-             (body (concat "<html><head></head><body>"
-                           "<div>" (plist-get elems :name) "</div></br>"
-                           (org-export-as 'html t nil t)
-                           "</body></html>"))
-             (data (Notes-update
-                    (Notes-normalise-org
-                     (plist-put (plist-put elems :container folder-id)
-                                :body body)))))
-        (Notes-kill-org-subtree)
-        (Notes-insert-note (Notes-normalise (Notes-to-plist data)))))
+    (let ((ws (window-start))     ; org-export-as seems to change this
+          (pt (point)))
+      (save-restriction
+        (widen)
+        (org-narrow-to-subtree)
+        (let* ((folder-id (org-entry-get-with-inheritance "folder-id"))
+               (elems (Notes-from-org-data (org-element-parse-buffer)))
+               (org-html-text-markup-alist ; for org-export-as
+                (cons '(underline . "<u>%s</u>")
+                      org-html-text-markup-alist))
+               (body (concat "<html><head></head><body>"
+                             "<div>" (plist-get elems :name) "</div></br>"
+                             (org-export-as 'html t nil t)
+                             "</body></html>"))
+               (data (Notes-update
+                      (Notes-normalise-org
+                       (plist-put (plist-put elems :container folder-id)
+                                  :body body)))))
+          (Notes-kill-org-subtree)
+          (Notes-insert-note (Notes-normalise (Notes-to-plist data)))))
+      (set-window-start nil ws)
+      (set-window-point nil pt))
     (message "Current note updated")
     'synced))
 
@@ -318,6 +324,7 @@ delete (first note whose id is #{note-id})")
 
 ;;;###autoload
 (defun Notes (&optional buffer)
+  "Pull all notes into a org-mode buffer BUFFER."
   (interactive)
   (switch-to-buffer (or buffer "*Notes*"))
   (erase-buffer)
@@ -342,6 +349,7 @@ delete (first note whose id is #{note-id})")
 
 ;;;###autoload
 (defun Notes-new-note (name &optional body)
+  "Make a new note with NAME and BODY in `Notes-default-folder'."
   (interactive (list (read-string "Title: ")
                      (read-string "Body: ")))
   (when (or (not name) (equal name ""))
