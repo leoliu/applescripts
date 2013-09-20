@@ -208,26 +208,27 @@ end tell"))))
 
 (defun Notes-update-from-org ()
   (when (= 3 (org-reduced-level (org-current-level)))
-    (let ((ws (window-start))     ; org-export-as seems to change this
-          (pt (point)))
-      (save-restriction
-        (widen)
-        (org-narrow-to-subtree)
-        (let* ((folder-id (org-entry-get-with-inheritance "folder-id"))
-               (elems (Notes-from-org-data (org-element-parse-buffer)))
-               (org-html-text-markup-alist ; for org-export-as
-                (cons '(underline . "<u>%s</u>")
-                      org-html-text-markup-alist))
-               (body (concat "<html><head></head><body>"
-                             "<div>" (plist-get elems :name) "</div></br>"
-                             (org-export-as 'html t nil t)
-                             "</body></html>"))
-               (data (Notes-update
-                      (Notes-normalise-org
-                       (plist-put (plist-put elems :container folder-id)
-                                  :body body)))))
-          (Notes-kill-org-subtree)
-          (Notes-insert-note (Notes-normalise (Notes-to-plist data)))))
+    (let* ((ws (window-start))  ; org-export-as seems to change this
+           (pt (point))
+           (folder-id (org-entry-get-with-inheritance "folder-id"))
+           (elems (Notes-from-org-data
+                   (save-restriction
+                     (widen)
+                     (org-narrow-to-subtree)
+                     (org-element-parse-buffer))))
+           (org-html-text-markup-alist ; for org-export-as
+            (cons '(underline . "<u>%s</u>")
+                  org-html-text-markup-alist))
+           (body (concat "<html><head></head><body>"
+                         "<div>" (plist-get elems :name) "</div></br>"
+                         (org-export-as 'html t nil t)
+                         "</body></html>"))
+           (data (Notes-update
+                  (Notes-normalise-org
+                   (plist-put (plist-put elems :container folder-id)
+                              :body body)))))
+      (Notes-kill-org-subtree)
+      (Notes-insert-note (Notes-to-plist data))
       (set-window-start nil ws)
       (set-window-point nil pt))
     (message "Current note updated")
@@ -300,10 +301,12 @@ end tell"))))
                         (point))
                       (+ 2 (* 2 (org-level-increment))))
       (or (bolp) (insert "\n")))
-    (org-set-property "note-id" note-id)
-    (org-set-property "creation-date" (Notes-seconds-to-org creation-date))
-    (org-set-property "modification-date"
-                      (Notes-seconds-to-org modification-date))))
+    (save-excursion
+      (forward-line -1)
+      (org-set-property "note-id" note-id)
+      (org-set-property "creation-date" (Notes-seconds-to-org creation-date))
+      (org-set-property "modification-date"
+                        (Notes-seconds-to-org modification-date)))))
 
 (defun Notes-kill-org-subtree ()
   (org-back-to-heading t)
