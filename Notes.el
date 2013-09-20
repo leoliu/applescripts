@@ -198,7 +198,9 @@ end tell"))))
       (lambda (x)
         (pcase (car x)
           (`headline
-           (put n :name (org-element-property :raw-value x)))
+           (when (eq (org-element-property :level x)
+                     (org-reduced-level (org-current-level)))
+             (put n :name (org-element-property :raw-value x))))
           (`node-property
            (put n (intern (concat ":" (org-element-property :key x)))
                 (org-element-property :value x))))))
