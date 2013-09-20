@@ -243,7 +243,7 @@ end tell"))))
          (fset ',symbol ,fundef)))))
 
 (defun Notes-shr-tag-li (cont)
-  (shr-ensure-paragraph)
+  (unless (bolp) (insert "\n"))
   (shr-indent)
   (let* ((bullet
           (if (numberp shr-list-mode)
