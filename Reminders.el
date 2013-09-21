@@ -98,35 +98,45 @@ on dateFromUT(UTS)
   return unixTimeStampStarts + (UTS as real) + (time to GMT)
 end dateFromUT")
 
+(defconst Reminders-reminderProps-handler "\
+on reminderProps(r)
+  tell application \"Reminders\"
+    set {name:x1, id:x2, body:x3, completed:x4, completion date:x5, ¬
+          creation date:x6, due date:x7, modification date:x8, remind me date:x9,¬
+          priority:x10} to (properties of r)
+    return ({x1,x2,x3,x4,my ut(x5),my ut(x6),my ut(x7),my ut(x8),my ut(x9), x10} as text)
+  end tell
+end reminderProps")
+
+(defun Reminders-to-plist (r &optional sep)
+  (let ((sep (or sep "---")))
+    (loop for k in Reminders-property-keys
+          for v in (split-string r sep)
+          collect k collect (if (string-match "date\\'" (symbol-name k))
+                                (string-to-number v)
+                              v))))
+
 ;;; (Reminders-reminders-1 "iCloud" "Reminders")
 (defun Reminders-reminders-1 (account list &optional qs)
   "Return all reminders in LIST of ACCOUNT."
-  (let ((rs (split-string (read (applescript Reminders-ut-handler "\
+  (let ((rs (split-string (read (applescript Reminders-ut-handler
+                                             Reminders-reminderProps-handler "\
 tell application \"Reminders\"
   set myReminders to {}
   set myRemindersRef to a reference to myReminders
-  set AppleScript's text item delimiters to {\"--\"}
+  set AppleScript's text item delimiters to {\"---\"}
   set nil to missing value
   repeat with r in (every reminder of list #{list} in account #{account})
-    set {name:x1, id:x2, body:x3, completed:x4, completion date:x5, ¬
-         creation date:x6, due date:x7, modification date:x8, remind me date:x9,¬
-         priority:x10} to (properties of r)
-    set temp to ({x1,x2,x3,x4,my ut(x5),my ut(x6),my ut(x7),my ut(x8),my ut(x9), x10} as text)
+    set temp to my reminderProps(r)
     if (#{qs} is missing value) or #{qs} is in temp then
-      copy  temp to end of myRemindersRef
+      copy temp to end of myRemindersRef
     end if
   end repeat
-  set AppleScript's text item delimiters to {\"::\"}
+  set AppleScript's text item delimiters to {\"###\"}
   return myRemindersRef as text
 end tell"))
-                          "::" t)))
-    (mapcar (lambda (x)
-              (loop for k in Reminders-property-keys
-                    for v in (split-string x "--")
-                    collect k collect (if (string-match "date\\'" (symbol-name k))
-                                          (string-to-number v)
-                                        v)))
-            rs)))
+                          "###" t)))
+    (mapcar #'Reminders-to-plist rs)))
 
 (defun Reminders-reminders (&optional qs)
   "Return all reminders as a tree."
@@ -150,9 +160,10 @@ end tell"))
                             &allow-other-keys)
       data
     (let ((priority (or priority 0)))
-      (split-string (read (applescript Reminders-ut-handler
-                                       Reminders-dateFromUT-handler
-                                       "set nil to missing value
+      (read (applescript Reminders-ut-handler
+                         Reminders-dateFromUT-handler
+                         Reminders-reminderProps-handler
+                         "set nil to missing value
 tell application \"Reminders\"
   if #{container} is not missing value then
     set l to first list whose id is #{container}
@@ -167,11 +178,7 @@ tell application \"Reminders\"
   if #{reminder-id} is missing value then
     set r to make new reminder in l
   else
-    try
-      set r to first reminder whose id is #{reminder-id}
-    on error
-      set r to make new reminder in l
-    end try
+    set r to first reminder whose id is #{reminder-id}
 
     -- Mind the round-off error by org mode
     if #{modification-date} is not missing value and \
@@ -212,16 +219,9 @@ tell application \"Reminders\"
     set completion date of r to my dateFromUT(#{completion-date})
     set completed of r to true
   end if
-  -- return meta info: id, creation date, modification date, container
-  set meta to {}
-  copy id of r to end of meta
-  copy my ut(creation date of r) to end of meta
-  copy my ut(modification date of r) to end of meta
-  copy id of l to end of meta
   set AppleScript's text item delimiters to {\"---\"}
-  return meta as text
-end tell"))
-                    "---"))))
+  return my reminderProps(r)
+end tell")))))
 
 (defun Reminders-normalise-org (p)
   (loop for (k v) on p by #'cddr
@@ -235,13 +235,11 @@ end tell"))
                   ((pred (lambda (x)
                            (and v (string-match-p "-date\\'" (symbol-name x)))))
                    (float-time (apply #'encode-time (org-parse-time-string v))))
-                  (:body (when (consp v)
-                           (mapconcat 'identity v "\n\n")))
                   (t v))))
 
 (defun Reminders-from-org-data (data)
   (let ((r (make-symbol "reminder")))
-    (org-element-map data '(headline planning node-property paragraph)
+    (org-element-map data '(headline planning node-property)
       (lambda (x)
         (pcase (car x)
           (`headline
@@ -259,35 +257,71 @@ end tell"))
                                       (org-element-property :closed x))))
           (`node-property
            (put r (intern (concat ":" (org-element-property :key x)))
-                (org-element-property :value x)))
-          (`paragraph
-           (put r :body
-                (append (get r :body)
-                        (list (org-trim (substring-no-properties
-                                         (car (org-element-contents x)))))))))))
+                (org-element-property :value x))))))
     (symbol-plist r)))
+
+(defun Reminders-insert-reminder (r)
+  (destructuring-bind (&key name reminder-id body completed completion-date
+                            creation-date due-date modification-date
+                            remind-me-date priority)
+      (Reminders-normalise r)
+    (insert (make-string (1+ (* 2 (org-level-increment))) ?*) " "
+            (if completed "DONE " "")
+            (pcase (string-to-number priority)
+              (0 "")
+              (1 "[#A] ")
+              (5 "[#B] ")
+              (9 "[#C] ")
+              (t ""))
+            name "\n")
+    (when body
+      (indent-rigidly (point)
+                      (progn (insert body) (point))
+                      (+ 2 (* 2 (org-level-increment))))
+      (or (bolp) (insert "\n")))
+    (save-excursion
+      (forward-line -1)
+      (org-set-property "reminder-id" reminder-id)
+      (when (> due-date 0)
+        (org-add-planning-info
+         'deadline (Reminders-seconds-to-org due-date)))
+      (when (and (> remind-me-date 0) (/= remind-me-date due-date))
+        (org-add-planning-info
+         'scheduled (Reminders-seconds-to-org remind-me-date)))
+      (when (> completion-date 0)
+        ;; NOTE: seconds are lost
+        (org-add-planning-info
+         'closed (Reminders-seconds-to-org completion-date)))
+      (org-set-property "creation-date"
+                        (Reminders-seconds-to-org creation-date))
+      (org-set-property "modification-date"
+                        (Reminders-seconds-to-org modification-date)))))
+
+(defun Reminders-kill-org-subtree ()
+  (org-back-to-heading t)
+  (kill-region (point) (progn (org-end-of-subtree t t) (point))))
 
 (defun Reminders-seconds-to-org (s)
   (format-time-string (cdr org-time-stamp-formats) (seconds-to-time s)))
 
 (defun Reminders-update-from-org ()
   (when (= 3 (org-reduced-level (org-current-level)))
-    (save-restriction
-      (widen)
-      (org-narrow-to-subtree)
-      (pcase-let* ((list-id (org-entry-get-with-inheritance "list-id"))
-                   (`(,reminder-id ,ctime ,mtime ,container)
-                    (Reminders-update
+    (pcase-let* ((ws (window-start))
+                 (pt (point))
+                 (list-id (org-entry-get-with-inheritance "list-id"))
+                 (elems (Reminders-from-org-data
+                         (save-restriction
+                           (widen)
+                           (org-narrow-to-subtree)
+                           (org-element-parse-buffer))))
+                 (body (org-export-as 'ascii t nil t))
+                 (r (Reminders-update
                      (Reminders-normalise-org
-                      (plist-put (Reminders-from-org-data (org-element-parse-buffer))
-                                 :container list-id)))))
-        (org-set-property "reminder-id" reminder-id)
-        (org-set-property "creation-date" (Reminders-seconds-to-org
-                                           (string-to-number ctime)))
-        (org-set-property "modification-date" (Reminders-seconds-to-org
-                                               (string-to-number mtime)))
-        (unless (equal list-id container)
-          (org-set-property "list-id" container))))
+                      (plist-put (plist-put elems :body body) :container list-id)))))
+      (Reminders-kill-org-subtree)
+      (Reminders-insert-reminder (Reminders-to-plist r))
+      (set-window-start nil ws)
+      (goto-char pt))
     (message "Current reminder updated")
     'synced))
 
@@ -376,36 +410,7 @@ Note: seconds may be rounded off due to limits of org."
             (kill-buffer (current-buffer))
             (error "No reminders matching `%s' found" qs))
           (dolist (r (Reminders-sort (cdr l)))
-            (destructuring-bind (&key name reminder-id body completed completion-date
-                                      creation-date due-date modification-date
-                                      remind-me-date priority)
-                (Reminders-normalise r)
-              (insert (make-string (1+ (* 2 (org-level-increment))) ?*) " "
-                      (if completed "DONE " "")
-                      (pcase (string-to-number priority)
-                        (0 "")
-                        (1 "[#A] ")
-                        (5 "[#B] ")
-                        (9 "[#C] ")
-                        (t ""))
-                      name "\n")
-              (when body
-                (indent-region (point) (progn (insert body "\n") (point))))
-              (org-set-property "reminder-id" reminder-id)
-              (when (> due-date 0)
-                (org-add-planning-info
-                 'deadline (Reminders-seconds-to-org due-date)))
-              (when (and (> remind-me-date 0) (/= remind-me-date due-date))
-                (org-add-planning-info
-                 'scheduled (Reminders-seconds-to-org remind-me-date)))
-              (when (> completion-date 0)
-                ;; NOTE: seconds are lost
-                (org-add-planning-info
-                 'closed (Reminders-seconds-to-org completion-date)))
-              (org-set-property "creation-date"
-                                (Reminders-seconds-to-org creation-date))
-              (org-set-property "modification-date"
-                                (Reminders-seconds-to-org modification-date))))))
+            (Reminders-insert-reminder r))))
       (goto-char (point-min))
       (org-content (1+ (* 2 (org-level-increment))))
       (setq-local revert-buffer-function
