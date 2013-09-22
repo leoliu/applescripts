@@ -206,9 +206,17 @@ end tell"))))
                 (org-element-property :value x))))))
     (symbol-plist n)))
 
+(defun Notes-export-org-subtree ()
+  (let ((org-html-text-markup-alist (cons '(underline . "<u>%s</u>")
+                                          org-html-text-markup-alist)))
+    (format "<html><head></head><body><div>%s</div></br>%s</body></html>"
+            (nth 4 (org-heading-components))
+            (org-export-as 'html t nil t))))
+
 (defun Notes-update-from-org ()
   (when (= 3 (org-reduced-level (org-current-level)))
-    (or (fboundp 'libxml-parse-html-region)
+    (or (not (org-entry-get (point) "note-id"))
+        (fboundp 'libxml-parse-html-region)
         (error "Sync from org to Notes unsafe"))
     (let* ((ws (window-start))  ; org-export-as seems to change this
            (pt (point))
@@ -218,13 +226,7 @@ end tell"))))
                      (widen)
                      (org-narrow-to-subtree)
                      (org-element-parse-buffer))))
-           (org-html-text-markup-alist ; for org-export-as
-            (cons '(underline . "<u>%s</u>")
-                  org-html-text-markup-alist))
-           (body (concat "<html><head></head><body>"
-                         "<div>" (plist-get elems :name) "</div></br>"
-                         (org-export-as 'html t nil t)
-                         "</body></html>"))
+           (body (Notes-export-org-subtree))
            (data (Notes-update
                   (Notes-normalise-org
                    (plist-put (plist-put elems :container folder-id)
@@ -387,9 +389,11 @@ delete (first note whose id is #{note-id})")
   (let ((body (unless (equal body "") body)))
     (Notes-update (Notes-normalise-org
                    (list :name name
-                         :body (if (or (not body) (equal body ""))
-                                   (list name)
-                                 (list name body)))))))
+                         :body (with-temp-buffer
+                                 (org-mode)
+                                 (insert "* " name "\n")
+                                 (and body (insert "  " body "\n"))
+                                 (Notes-export-org-subtree)))))))
 
 (provide 'Notes)
 ;;; Notes.el ends here
