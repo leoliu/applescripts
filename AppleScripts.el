@@ -83,10 +83,10 @@ tell application \"Finder\"
   if (count temp) > 30 then
     set temp to items 1 thru 31 of temp
   end if
-  set AppleScript's text item delimiters to {\"---\"}
+  set AppleScript's text item delimiters to {\"----\"}
   return temp as text
 end tell"))
-                              "---"))
+                              "----"))
          (count (string-to-number (pop items))))
     (and (zerop count) (user-error "No trash"))
     (when (or no-confirm

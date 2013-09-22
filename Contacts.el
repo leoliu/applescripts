@@ -40,10 +40,10 @@ tell application \"Contacts\"
   repeat with g in groups
     copy name of g to end of gs
   end repeat
-  set AppleScript's text item delimiters to {\"---\"}
+  set AppleScript's text item delimiters to {\"----\"}
   return gs as text
 end tell"))
-                "---"))
+                "----"))
 
 (defcustom Contacts-query-limit 30
   "Maximum number of entries returned by `Contacts-query'."
@@ -86,9 +86,9 @@ tell application \"Contacts\"
   repeat with p in thePeople
     copy the vcard of p to the end of theVcardsRef
   end repeat
-  set AppleScript's text item delimiters to {\"---\"}
+  set AppleScript's text item delimiters to {\"----\"}
   return theVcardsRef as text
-end tell")) "---" t)))
+end tell")) "----" t)))
     (when (called-interactively-p 'interactive)
       (if (null result)
           (message "No contacts matching %S" string)

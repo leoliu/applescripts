@@ -35,33 +35,33 @@
 
 (defun Reminders-accounts ()
   (let ((a (split-string (read (applescript
-                                "set AppleScript's text item delimiters to {\"---\"}
+                                "set AppleScript's text item delimiters to {\"----\"}
 tell application \"Reminders\"
   set XX to {}
   repeat with A in accounts
     set {name:x1, id:x2} to properties of A
     copy {x1, x2} as text to end of XX
   end repeat
-  set AppleScript's text item delimiters to {\"###\"}
+  set AppleScript's text item delimiters to {\"####\"}
   return XX as text
 end tell"))
-                         "###")))
-    (mapcar (lambda (x) (split-string x "---")) a)))
+                         "####")))
+    (mapcar (lambda (x) (split-string x "----")) a)))
 
 (defun Reminders-lists (account)
   (let ((l (split-string (read (applescript "\
-set AppleScript's text item delimiters to {\"---\"}
+set AppleScript's text item delimiters to {\"----\"}
 tell application \"Reminders\"
   set XX to {}
   repeat with L in lists of account #{account}
     set {name:x1, id:x2} to L
     copy {x1, x2} as text to end of XX
   end repeat
-  set AppleScript's text item delimiters to {\"###\"}
+  set AppleScript's text item delimiters to {\"####\"}
   return XX as text
 end tell"))
-                         "###")))
-    (mapcar (lambda (x) (split-string x "---")) l)))
+                         "####")))
+    (mapcar (lambda (x) (split-string x "----")) l)))
 
 (defconst Reminders-property-keys
   '(:name :reminder-id :body :completed :completion-date :creation-date
@@ -109,7 +109,7 @@ on reminderProps(r)
 end reminderProps")
 
 (defun Reminders-to-plist (r &optional sep)
-  (let ((sep (or sep "---")))
+  (let ((sep (or sep "----")))
     (loop for k in Reminders-property-keys
           for v in (split-string r sep)
           collect k collect (if (string-match "date\\'" (symbol-name k))
@@ -124,7 +124,7 @@ end reminderProps")
 tell application \"Reminders\"
   set myReminders to {}
   set myRemindersRef to a reference to myReminders
-  set AppleScript's text item delimiters to {\"---\"}
+  set AppleScript's text item delimiters to {\"----\"}
   set nil to missing value
   repeat with r in (every reminder of list #{list} in account #{account})
     set temp to my reminderProps(r)
@@ -132,10 +132,10 @@ tell application \"Reminders\"
       copy temp to end of myRemindersRef
     end if
   end repeat
-  set AppleScript's text item delimiters to {\"###\"}
+  set AppleScript's text item delimiters to {\"####\"}
   return myRemindersRef as text
 end tell"))
-                          "###" t)))
+                          "####" t)))
     (mapcar #'Reminders-to-plist rs)))
 
 (defun Reminders-reminders (&optional qs)
@@ -219,7 +219,7 @@ tell application \"Reminders\"
     set completion date of r to my dateFromUT(#{completion-date})
     set completed of r to true
   end if
-  set AppleScript's text item delimiters to {\"---\"}
+  set AppleScript's text item delimiters to {\"----\"}
   return my reminderProps(r)
 end tell")))))
 

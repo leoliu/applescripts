@@ -77,35 +77,35 @@ end dateFromUT")
   (let ((a (split-string (read (applescript "\
 tell application \"Notes\"
   set XX to {}
-  set AppleScript's text item delimiters to {\"---\"}
+  set AppleScript's text item delimiters to {\"----\"}
   repeat with a in accounts
     set {name:x1, id:x2} to properties of a
     copy {x1, x2} as text to end of XX
   end repeat
-  set AppleScript's text item delimiters to {\"###\"}
+  set AppleScript's text item delimiters to {\"####\"}
   return XX as text
 end tell"))
-                         "###" t)))
-    (mapcar (lambda (x) (split-string x "---")) a)))
+                         "####" t)))
+    (mapcar (lambda (x) (split-string x "----")) a)))
 
 (defun Notes-folders (account)
   "Return a list of folder names in ACCOUNT."
   (let ((f (split-string (read (applescript "\
 tell application \"Notes\"
   set FF to {}
-  set AppleScript's text item delimiters to {\"---\"}
+  set AppleScript's text item delimiters to {\"----\"}
   repeat with f in folders of account #{account}
     set {name:x1, id:x2} to f
     copy {x1,x2} as text to end of FF
   end repeat
-  set AppleScript's text item delimiters to {\"###\"}
+  set AppleScript's text item delimiters to {\"####\"}
   return FF as text
 end tell"))
-                         "###" t)))
-    (mapcar (lambda (x) (split-string x "---")) f)))
+                         "####" t)))
+    (mapcar (lambda (x) (split-string x "----")) f)))
 
 (defun Notes-to-plist (note &optional sep)
-  (let ((sep (or sep "---")))
+  (let ((sep (or sep "----")))
     (loop for v in (split-string note sep)
           for k in '(:name :note-id :body :creation-date :modification-date)
           collect k collect (if (string-match "date\\'" (symbol-name k))
@@ -117,7 +117,7 @@ end tell"))
   (let ((notes (split-string (read (applescript Notes-ut-handler
                                                 "\
 tell application \"Notes\"
-  set AppleScript's text item delimiters to {\"---\"}
+  set AppleScript's text item delimiters to {\"----\"}
   set myNotes to {}
   set myNotesRef to a reference to myNotes
   repeat with n in notes of folder #{folder} of account #{account}
@@ -125,10 +125,10 @@ tell application \"Notes\"
       to properties of n
     copy {x1, x2, x3, my ut(x4), my ut(x5)} as text to end of myNotesRef
   end repeat
-  set AppleScript's text item delimiters to {\"###\"}
+  set AppleScript's text item delimiters to {\"####\"}
   return myNotesRef as text
 end tell"))
-                             "###" t)))
+                             "####" t)))
     (mapcar #'Notes-to-plist notes)))
 
 (defun Notes-notes ()                   ; TODO: handle attachment
@@ -179,7 +179,7 @@ tell application \"Notes\"
 
   set {name:x1, id:x2, body:x3, creation date:x4, modification date:x5} \
     to properties of n
-  set AppleScript's text item delimiters to {\"---\"}
+  set AppleScript's text item delimiters to {\"----\"}
   return {x1, x2, x3, my ut(x4), my ut(x5)} as text
 end tell"))))
 
