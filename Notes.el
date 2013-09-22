@@ -209,9 +209,12 @@ end tell"))))
 (defun Notes-export-org-subtree ()
   (let ((org-html-text-markup-alist (cons '(underline . "<u>%s</u>")
                                           org-html-text-markup-alist)))
-    (format "<html><head></head><body><div>%s</div></br>%s</body></html>"
-            (nth 4 (org-heading-components))
-            (org-export-as 'html t nil t))))
+    (prog1 (format "<html><head></head><body><div>%s</div></br>%s</body></html>"
+                   (nth 4 (org-heading-components))
+                   ;; XXX: why does it recenter the selected window?
+                   (org-export-as 'html t nil t))
+      ;; Clear the ugly message from `org-cycle-internal-global'.
+      (message nil))))
 
 (defun Notes-update-from-org ()
   (when (= 3 (org-reduced-level (org-current-level)))
@@ -356,7 +359,7 @@ delete (first note whose id is #{note-id})")
 ;;;###autoload
 (defun Notes (&optional buffer)
   "Pull all notes into a org-mode buffer BUFFER."
-  (interactive)
+  (interactive (ignore (message "Pulling notes ...") (sit-for 0.1)))
   (switch-to-buffer (or buffer "*Notes*"))
   (erase-buffer)
   (insert "#+TITLE: Notes\n\n")
