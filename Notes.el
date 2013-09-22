@@ -285,6 +285,15 @@ end tell"))))
           (insert url)
         (insert (format "[[%s][%s]]" url text))))))
 
+(defun Notes-shr-tag-pre (cont)
+  (let ((shr-folding-mode 'none))
+    (shr-ensure-newline)
+    (insert "#+BEGIN_EXAMPLE")
+    (shr-indent)
+    (shr-generic cont)
+    (shr-ensure-newline)
+    (insert "#+END_EXAMPLE")))
+
 (autoload 'sgml-pretty-print "sgml-mode" nil t)
 
 (defun Notes-html2org (html)
@@ -295,7 +304,8 @@ end tell"))))
         (let ((dom (libxml-parse-html-region (point-min) (point-max))))
           (erase-buffer)
           (Notes-with-fset ((shr-tag-li Notes-shr-tag-li)
-                            (shr-tag-a Notes-shr-tag-a))
+                            (shr-tag-a Notes-shr-tag-a)
+                            (shr-tag-pre Notes-shr-tag-pre))
             (shr-insert-document dom)))
       (sgml-pretty-print (point-min) (point-max))
       (html2text))
@@ -384,9 +394,15 @@ delete (first note whose id is #{note-id})")
 
 ;;;###autoload
 (defun Notes-new-note (name &optional body)
-  "Make a new note with NAME and BODY in `Notes-default-folder'."
+  "Make a new note with NAME and BODY in `Notes-default-folder'.
+If region is active it is used for BODY."
   (interactive (list (read-string "Title: ")
-                     (read-string "Body: ")))
+                     (if (use-region-p)
+                         (concat "#+BEGIN_EXAMPLE\n"
+                                 (buffer-substring-no-properties
+                                  (region-beginning) (region-end))
+                                 "\n#+END_EXAMPLE")
+                       (read-string "Body: "))))
   (when (or (not name) (equal name ""))
     (error "Title required"))
   (let ((body (unless (equal body "") body)))
