@@ -395,7 +395,11 @@ delete (first note whose id is #{note-id})")
                          :body (with-temp-buffer
                                  (org-mode)
                                  (insert "* " name "\n")
-                                 (and body (insert "  " body "\n"))
+                                 (when body
+                                   (indent-rigidly (point)
+                                                   (progn (insert body "\n")
+                                                          (point))
+                                                   2))
                                  (Notes-export-org-subtree)))))))
 
 (provide 'Notes)
