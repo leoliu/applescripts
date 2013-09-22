@@ -370,6 +370,7 @@ delete (first note whose id is #{note-id})")
         (Notes-insert-note n))))
   (goto-char (point-min))
   (org-content (1+ (* 2 (org-level-increment))))
+  (set-buffer-modified-p nil)
   (setq-local revert-buffer-function
               (lambda (_ignore-auto noconfirm)
                 (when (or noconfirm

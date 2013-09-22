@@ -377,10 +377,7 @@ end tell"))
       (message "done"))))
 
 ;;;###autoload
-(defalias 'Reminders 'Reminders-to-org)
-
-;;;###autoload
-(defun Reminders-to-org (&optional qs buffer)
+(defun Reminders (&optional qs buffer)
   "Import all reminders from Reminders.app to an org buffer.
 Mapping between reminder and org
     remind me date  => scheduled
@@ -390,7 +387,7 @@ Mapping between reminder and org
 Note: seconds may be rounded off due to limits of org."
   (interactive
    (prog1 (list (read-string "Query string: "))
-     (ignore (message "Pulling reminders ...") (sit-for 0))))
+     (ignore (message "Pulling reminders ...") (sit-for 0.1))))
   (let* ((qs (if (equal qs "") nil qs))
          (buffer (or buffer "*Reminders*"))
          ;; Oddly in applescript "" is in "whatever" is false
@@ -413,11 +410,12 @@ Note: seconds may be rounded off due to limits of org."
             (Reminders-insert-reminder r))))
       (goto-char (point-min))
       (org-content (1+ (* 2 (org-level-increment))))
+      (set-buffer-modified-p nil)
       (setq-local revert-buffer-function
                   (lambda (_ignore-auto noconfirm)
                     (when (or noconfirm
                               (yes-or-no-p "Pull from Reminders.app? "))
-                      (Reminders-to-org qs buffer))))
+                      (Reminders qs buffer))))
       (switch-to-buffer (current-buffer)))))
 
 (provide 'Reminders)
