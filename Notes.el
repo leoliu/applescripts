@@ -209,8 +209,8 @@ end tell"))))
 (defun Notes-export-org-subtree ()
   (let ((org-html-text-markup-alist (cons '(underline . "<u>%s</u>")
                                           org-html-text-markup-alist)))
-    (prog1 (format "<html><head></head><body><div>%s</div></br>%s</body></html>"
-                   (nth 4 (org-heading-components))
+    (prog1 (concat (nth 4 (org-heading-components))
+                   "<div></br></div>"
                    ;; XXX: why does it recenter the selected window?
                    (org-export-as 'html t nil t))
       ;; Clear the ugly message from `org-cycle-internal-global'.
