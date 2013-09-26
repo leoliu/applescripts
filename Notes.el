@@ -418,5 +418,15 @@ If region is active it is used for BODY."
                                                    2))
                                  (Notes-export-org-subtree)))))))
 
+(defun Notes-view-body ()
+  "View the html source of the note body."
+  (interactive)
+  (let ((note-id (or (org-entry-get-with-inheritance "note-id")
+                     (error "No existing note at point")))
+        (print-escape-newlines nil))
+    (with-output-to-temp-buffer "*note-html*"
+      (princ (read (applescript "\
+tell application \"Notes\" to get body of note id #{note-id}"))))))
+
 (provide 'Notes)
 ;;; Notes.el ends here
