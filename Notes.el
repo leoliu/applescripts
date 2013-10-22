@@ -384,6 +384,8 @@ delete (first note whose id is #{note-id})")
       (dolist (n (cdr f))
         (Notes-insert-note n))))
   (goto-char (point-min))
+  (outline-next-visible-heading 1)
+  (and (org-goto-first-child) (org-goto-first-child))
   (org-content (1+ (* 2 (org-level-increment))))
   (set-buffer-modified-p nil)
   (setq-local revert-buffer-function
