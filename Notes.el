@@ -217,6 +217,7 @@ end tell"))))
       (message nil))))
 
 (defun Notes-update-from-org ()
+  (interactive)
   (when (= 3 (org-reduced-level (org-current-level)))
     (or (not (org-entry-get (point) "note-id"))
         (fboundp 'libxml-parse-html-region)
@@ -366,6 +367,11 @@ end tell"))))
 delete (first note whose id is #{note-id})")
       (Notes-kill-org-subtree))))
 
+(defvar Notes-org-map
+  (let ((m (make-sparse-keymap)))
+    (define-key m [remap save-buffer] 'Notes-update-from-org)
+    m))
+
 ;;;###autoload
 (defun Notes (&optional buffer)
   "Pull all notes into a org-mode buffer BUFFER."
@@ -375,6 +381,7 @@ delete (first note whose id is #{note-id})")
   (insert "#+TITLE: Notes\n\n")
   (org-mode)
   (add-hook 'org-ctrl-c-ctrl-c-hook #'Notes-update-from-org nil t)
+  (push (cons t Notes-org-map) minor-mode-overriding-map-alist)
   (dolist (a (Notes-notes))
     (insert "* " (caar a) "\n")
     (org-set-property "account-id" (cadr (car a)))
