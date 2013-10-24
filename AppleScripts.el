@@ -42,9 +42,9 @@
   "Post a notification using the Notification Center.
 SOUND may be the base name of any sound installed in
 Library/Sounds."
-  (let ((title (or title "Emacs"))
-        (subtitle (or subtitle ""))
-        (sound (or sound "")))
+  (let ((title (substring-no-properties (or title "Emacs")))
+        (subtitle (substring-no-properties (or subtitle "")))
+        (sound (substring-no-properties (or sound ""))))
     (applescript "display notification #{body} with title #{title} \
 subtitle #{subtitle} sound name #{sound}")))
 
