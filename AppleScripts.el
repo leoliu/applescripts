@@ -38,6 +38,16 @@
   "Return t if Emacs is currently selected."
   (equal (applescript "current application is frontmost") "true"))
 
+(defun osx-notify (body &optional title subtitle sound)
+  "Post a notification using the Notification Center.
+SOUND may be the base name of any sound installed in
+Library/Sounds."
+  (let ((title (or title "Emacs"))
+        (subtitle (or subtitle ""))
+        (sound (or sound "")))
+    (applescript "display notification #{body} with title #{title} \
+subtitle #{subtitle} sound name #{sound}")))
+
 (defun osx-say (text &optional nato)
   "Speak TEXT."
   (interactive
