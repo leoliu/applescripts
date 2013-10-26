@@ -40,7 +40,9 @@ tell application \"Reminders\"
   set XX to {}
   repeat with A in accounts
     set {name:x1, id:x2} to properties of A
-    copy {x1, x2} as text to end of XX
+    if x2 is not missing value
+      copy {x1, x2} as text to end of XX
+    end if
   end repeat
   set AppleScript's text item delimiters to {\"####\"}
   return XX as text
