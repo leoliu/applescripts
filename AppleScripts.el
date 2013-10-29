@@ -34,6 +34,11 @@
   (or (fboundp 'user-error)
       (defalias 'user-error 'error)))
 
+(defcustom osx-notify-sound nil
+  "Default sound for `osx-notify'."
+  :type '(choice (const :tag "System default" nil) file)
+  :group 'applescript)
+
 (defun osx-emacs-selected-p ()
   "Return t if Emacs is currently selected."
   (equal (applescript "current application is frontmost") "true"))
@@ -44,7 +49,7 @@ SOUND may be the base name of any sound installed in
 Library/Sounds."
   (let ((title (substring-no-properties (or title "Emacs")))
         (subtitle (substring-no-properties (or subtitle "")))
-        (sound (substring-no-properties (or sound ""))))
+        (sound (substring-no-properties (or sound osx-notify-sound ""))))
     (applescript "display notification #{body} with title #{title} \
 subtitle #{subtitle} sound name #{sound}")))
 
