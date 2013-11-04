@@ -170,7 +170,8 @@ get name of application file id #{(match-string 1 LS)}"))))))
     (when default-browser
       `(lambda (url &rest _args)
          (applescript
-          ,(format "tell application %S to (open location #{url}) activate"
+          ,(format "tell application %S to (open location \
+#{(substring-no-properties url)}) activate"
                    default-browser))))))
 
 (defun osx-finder ()
