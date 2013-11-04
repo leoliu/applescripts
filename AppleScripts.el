@@ -154,6 +154,25 @@ The return value is a list similar to that of `color-values'."
       (setq default-color result)
       result)))
 
+(defun osx-make-browse-url-function ()
+  "A `browse-url' function that supports file:/// with anchors."
+  (let ((default-browser
+          (let ((LS (with-temp-buffer
+                      (when (zerop (process-file "defaults" nil t nil
+                                                 "read" "com.apple.LaunchServices"
+                                                 "LSHandlers"))
+                        (buffer-string)))))
+            (when (and LS (string-match "\
+LSHandlerContentType = \"public.html\";\n[ \t]*LSHandlerRoleViewer = \"\\([^\"\n]+\\)\""
+                                        LS))
+              (read (applescript "tell application \"Finder\" to \
+get name of application file id #{(match-string 1 LS)}"))))))
+    (when default-browser
+      `(lambda (url &rest _args)
+         (applescript
+          ,(format "tell application %S to (open location #{url}) activate"
+                   default-browser))))))
+
 (defun osx-finder ()
   "Open Finder.app and reveal `buffer-file-name' if any."
   (interactive)
