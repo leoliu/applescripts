@@ -11,6 +11,7 @@ AppleScripts
 
 A dumping ground for smallish AppleScripts:
 
+#. ``osx-notify``
 #. ``osx-emacs-selected-p``
 #. ``osx-say``
 #. ``osx-summarize``

@@ -375,7 +375,7 @@ delete (first note whose id is #{note-id})")
 ;;;###autoload
 (defun Notes (&optional buffer)
   "Pull all notes into a org-mode buffer BUFFER."
-  (interactive (ignore (message "Pulling notes ...") (sit-for 0.1)))
+  (interactive (ignore (message "Pulling notes...") (sit-for 0.1)))
   (switch-to-buffer (or buffer "*Notes*"))
   (erase-buffer)
   (insert "#+TITLE: Notes\n\n")

@@ -389,7 +389,7 @@ Mapping between reminder and org
 Note: seconds may be rounded off due to limits of org."
   (interactive
    (prog1 (list (read-string "Query string: "))
-     (ignore (message "Pulling reminders ...") (sit-for 0.1))))
+     (ignore (message "Pulling reminders...") (sit-for 0.1))))
   (let* ((qs (if (equal qs "") nil qs))
          (buffer (or buffer "*Reminders*"))
          ;; Oddly in applescript "" is in "whatever" is false
