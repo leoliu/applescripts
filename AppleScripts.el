@@ -163,7 +163,7 @@ The return value is a list similar to that of `color-values'."
                                                  "LSHandlers"))
                         (buffer-string)))))
             (when (and LS (string-match "\
-LSHandlerContentType = \"public.html\";\n[ \t]*LSHandlerRoleViewer = \"\\([^\"\n]+\\)\""
+LSHandlerContentType = \"public.html\";\n[ \t]*LSHandlerRoleAll = \"\\([^\"\n]+\\)\""
                                         LS))
               (read (applescript "tell application \"Finder\" to \
 get name of application file id #{(match-string 1 LS)}"))))))
