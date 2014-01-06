@@ -61,5 +61,27 @@ set nil to missing value
   tell x to reload
 end tell"))
 
+;;;###autoload
+(defun Chrome-browse-url-helper (url prefix &optional background)
+  (let ((url (substring-no-properties url))
+        (prefix (substring-no-properties prefix))
+        (background (if background "true" "false")))
+    (applescript "tell application #{Chrome-application-name}
+  try
+    set x to (first tab of front window whose URL starts with #{prefix})
+  on error
+    tell front window
+      set x to make tab
+    end tell
+  end try
+  if x is loading then
+    tell x to stop
+  end if
+  set URL of x to #{url}
+  if #{background} is \"false\" then
+    tell x to activate
+  end if
+end tell")))
+
 (provide 'Chrome)
 ;;; Chrome.el ends here
