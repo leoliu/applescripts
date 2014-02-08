@@ -1,6 +1,6 @@
 ;;; Contacts.el --- Contacts.app                     -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2013  Leo Liu
+;; Copyright (C) 2013-2014  Leo Liu
 
 ;; Author: Leo Liu <sdl.web@gmail.com>
 ;; Version: 0.5.0
