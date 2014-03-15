@@ -24,9 +24,8 @@
 
 ;;; Code:
 
-(eval-when-compile
-  (require 'applescript)
-  (require 'cl))
+(eval-when-compile (require 'applescript))
+(require 'cl-lib)
 
 (defcustom Chrome-application-name "Google Chrome Canary"
   "Chrome application name."

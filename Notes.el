@@ -26,10 +26,8 @@
 
 ;;; Code:
 
-(eval-when-compile
-  (require 'applescript)
-  (require 'cl))
-
+(eval-when-compile (require 'applescript))
+(require 'cl-lib)
 (require 'shr)
 
 (require 'org)
@@ -106,11 +104,11 @@ end tell"))
 
 (defun Notes-to-plist (note &optional sep)
   (let ((sep (or sep "----")))
-    (loop for v in (split-string note sep)
-          for k in '(:name :note-id :body :creation-date :modification-date)
-          collect k collect (if (string-match "date\\'" (symbol-name k))
-                                (string-to-number v)
-                              v))))
+    (cl-loop for v in (split-string note sep)
+             for k in '(:name :note-id :body :creation-date :modification-date)
+             collect k collect (if (string-match "date\\'" (symbol-name k))
+                                   (string-to-number v)
+                                 v))))
 
 ;; (Notes-notes-1 "iCloud" "Notes")
 (defun Notes-notes-1 (account folder)
@@ -132,21 +130,21 @@ end tell"))
     (mapcar #'Notes-to-plist notes)))
 
 (defun Notes-notes ()                   ; TODO: handle attachment
-  (loop for a in (Notes-accounts)
-        collect (cons a (loop for f in (Notes-folders (car a))
-                              collect (cons f (Notes-notes-1 (car a) (car f)))))))
+  (cl-loop for a in (Notes-accounts)
+           collect (cons a (cl-loop for f in (Notes-folders (car a))
+                                    collect (cons f (Notes-notes-1 (car a) (car f)))))))
 
 (defun Notes-normalise (n)            ; same as `Reminders-normalise'.
-  (loop for x in n
-        collect (cond ((not (stringp x)) x)
-                      ((equal x "missing value") nil)
-                      ((equal x "true") t)
-                      ((equal x "false") nil)
-                      (t x))))
+  (cl-loop for x in n
+           collect (cond ((not (stringp x)) x)
+                         ((equal x "missing value") nil)
+                         ((equal x "true") t)
+                         ((equal x "false") nil)
+                         (t x))))
 
 (defun Notes-update (data)
-  (destructuring-bind (&key note-id name body container modification-date
-                            &allow-other-keys)
+  (cl-destructuring-bind (&key note-id name body container modification-date
+                               &allow-other-keys)
       data
     (read (applescript Notes-ut-handler
                        Notes-dateFromUT-handler
@@ -184,13 +182,13 @@ tell application \"Notes\"
 end tell"))))
 
 (defun Notes-normalise-org (p)
-  (loop for (k v) on p by #'cddr
-        collect k
-        collect (pcase k
-                  ((pred (lambda (x)
-                           (and v (string-match-p "-date\\'" (symbol-name x)))))
-                   (float-time (apply #'encode-time (org-parse-time-string v))))
-                  (t v))))
+  (cl-loop for (k v) on p by #'cddr
+           collect k
+           collect (pcase k
+                     ((pred (lambda (x)
+                              (and v (string-match-p "-date\\'" (symbol-name x)))))
+                      (float-time (apply #'encode-time (org-parse-time-string v))))
+                     (t v))))
 
 (defun Notes-from-org-data (data)
   (let ((n (make-symbol "note")))
@@ -245,23 +243,6 @@ end tell"))))
 (defun Notes-seconds-to-org (s)
   (format-time-string (cdr org-time-stamp-formats) (seconds-to-time s)))
 
-;;; NOTE: consider using `advice-add' instead once 24.4 is released.
-(defmacro Notes-with-fset (funlist &rest body)
-  (declare (indent 1))
-  (let ((entries (mapcar (lambda (f)
-                           (cons (make-symbol (format "-%s-" (car f))) f))
-                         funlist)))
-    `(let (,@(mapcar (lambda (x)
-                       `(,(car x) (symbol-function ',(cadr x))))
-                     entries))
-       ,@(mapcar (lambda (x)
-                   `(fset ',(nth 1 x) (indirect-function #',(nth 2 x))))
-                 entries)
-       (unwind-protect (progn ,@body)
-         ,@(mapcar (lambda (x)
-                     `(fset ',(cadr x) ,(car x)))
-                   entries)))))
-
 (defun Notes-shr-tag-li (cont)
   (unless (bolp) (insert "\n"))
   (shr-indent)
@@ -304,9 +285,9 @@ end tell"))))
     (if (fboundp 'libxml-parse-html-region)
         (let ((dom (libxml-parse-html-region (point-min) (point-max))))
           (erase-buffer)
-          (Notes-with-fset ((shr-tag-li Notes-shr-tag-li)
-                            (shr-tag-a Notes-shr-tag-a)
-                            (shr-tag-pre Notes-shr-tag-pre))
+          (cl-letf (((symbol-function 'shr-tag-li) #'Notes-shr-tag-li)
+                    ((symbol-function 'shr-tag-a) #'Notes-shr-tag-a)
+                    ((symbol-function 'shr-tag-pre) #'Notes-shr-tag-pre))
             (shr-insert-document dom)))
       (sgml-pretty-print (point-min) (point-max))
       (html2text))
@@ -331,7 +312,7 @@ end tell"))))
     (buffer-substring-no-properties (point-min) (point-max))))
 
 (defun Notes-insert-note (n)
-  (destructuring-bind (&key name note-id body creation-date modification-date)
+  (cl-destructuring-bind (&key name note-id body creation-date modification-date)
       (Notes-normalise n)
     (insert (make-string (1+ (* 2 (org-level-increment))) ?*)
             " " (org-trim name) "\n")

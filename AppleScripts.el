@@ -26,9 +26,8 @@
 
 ;;; Code:
 
-(eval-when-compile
-  (require 'applescript)
-  (require 'cl))
+(eval-when-compile (require 'applescript))
+(require 'cl-lib)
 
 (eval-and-compile
   (or (fboundp 'user-error)
@@ -119,11 +118,11 @@ end tell"))
                      (when (window-live-p window)
                        (quit-restore-window window 'kill))))
                  ;; Split items 5-item lines
-                 (loop for f in items
-                       for c from 1
-                       do (princ (format "%d. %s\t" c f))
-                       when (zerop (mod c 5))
-                       do (princ "\n"))
+                 (cl-loop for f in items
+                          for c from 1
+                          do (princ (format "%d. %s\t" c f))
+                          when (zerop (mod c 5))
+                          do (princ "\n"))
                  (unless (= (length items) count)
                    (princ "......")))))
       (applescript "ignoring application responses

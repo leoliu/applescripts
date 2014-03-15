@@ -26,9 +26,8 @@
 
 ;;; Code:
 
-(eval-when-compile
-  (require 'applescript)
-  (require 'cl))
+(eval-when-compile (require 'applescript))
+(require 'cl-lib)
 
 (require 'org)
 (require 'org-element)
@@ -112,11 +111,11 @@ end reminderProps")
 
 (defun Reminders-to-plist (r &optional sep)
   (let ((sep (or sep "----")))
-    (loop for k in Reminders-property-keys
-          for v in (split-string r sep)
-          collect k collect (if (string-match "date\\'" (symbol-name k))
-                                (string-to-number v)
-                              v))))
+    (cl-loop for k in Reminders-property-keys
+             for v in (split-string r sep)
+             collect k collect (if (string-match "date\\'" (symbol-name k))
+                                   (string-to-number v)
+                                 v))))
 
 ;;; (Reminders-reminders-1 "iCloud" "Reminders")
 (defun Reminders-reminders-1 (account list &optional qs)
@@ -142,24 +141,24 @@ end tell"))
 
 (defun Reminders-reminders (&optional qs)
   "Return all reminders as a tree."
-  (loop for a in (Reminders-accounts)
-        collect (cons a (loop for l in (Reminders-lists (car a))
-                              collect (cons l (Reminders-reminders-1
-                                               (car a) (car l) qs))))))
+  (cl-loop for a in (Reminders-accounts)
+           collect (cons a (cl-loop for l in (Reminders-lists (car a))
+                                    collect (cons l (Reminders-reminders-1
+                                                     (car a) (car l) qs))))))
 
 (defun Reminders-normalise (r)
-  (loop for x in r
-        collect (cond ((not (stringp x)) x)
-                      ((equal x "missing value") nil)
-                      ((equal x "true") t)
-                      ((equal x "false") nil)
-                      (t x))))
+  (cl-loop for x in r
+           collect (cond ((not (stringp x)) x)
+                         ((equal x "missing value") nil)
+                         ((equal x "true") t)
+                         ((equal x "false") nil)
+                         (t x))))
 
 ;;; FIXME: too slow
 (defun Reminders-update (data)
-  (destructuring-bind (&key reminder-id name body priority due-date completion-date
-                            remind-me-date container modification-date
-                            &allow-other-keys)
+  (cl-destructuring-bind (&key reminder-id name body priority due-date completion-date
+                               remind-me-date container modification-date
+                               &allow-other-keys)
       data
     (let ((priority (or priority 0)))
       (read (applescript Reminders-ut-handler
@@ -226,18 +225,18 @@ tell application \"Reminders\"
 end tell")))))
 
 (defun Reminders-normalise-org (p)
-  (loop for (k v) on p by #'cddr
-        collect k
-        collect (pcase k
-                  (:priority (pcase v
-                               (?A 1)
-                               (?B 5)
-                               (?C 9)
-                               (t 0)))
-                  ((pred (lambda (x)
-                           (and v (string-match-p "-date\\'" (symbol-name x)))))
-                   (float-time (apply #'encode-time (org-parse-time-string v))))
-                  (t v))))
+  (cl-loop for (k v) on p by #'cddr
+           collect k
+           collect (pcase k
+                     (:priority (pcase v
+                                  (?A 1)
+                                  (?B 5)
+                                  (?C 9)
+                                  (t 0)))
+                     ((pred (lambda (x)
+                              (and v (string-match-p "-date\\'" (symbol-name x)))))
+                      (float-time (apply #'encode-time (org-parse-time-string v))))
+                     (t v))))
 
 (defun Reminders-from-org-data (data)
   (let ((r (make-symbol "reminder")))
@@ -263,9 +262,9 @@ end tell")))))
     (symbol-plist r)))
 
 (defun Reminders-insert-reminder (r)
-  (destructuring-bind (&key name reminder-id body completed completion-date
-                            creation-date due-date modification-date
-                            remind-me-date priority)
+  (cl-destructuring-bind (&key name reminder-id body completed completion-date
+                               creation-date due-date modification-date
+                               remind-me-date priority)
       (Reminders-normalise r)
     (insert (make-string (1+ (* 2 (org-level-increment))) ?*) " "
             (if completed "DONE " "")
@@ -359,11 +358,11 @@ end tell")))))
 ;;;###autoload
 (defun Reminders-new-reminder (name body &rest props)
   (interactive (list (read-string "Name: ") (read-string "Body: ")))
-  (check-type name string)
+  (cl-check-type name string)
   (when (equal name "")
     (error "Name is empty"))
   (prog1 (if (consp props)
-             (Reminders-update (list* :name name :body body props))
+             (Reminders-update (cl-list* :name name :body body props))
            ;; Optimise for a common case.
            (applescript "\
 tell application \"Reminders\"
