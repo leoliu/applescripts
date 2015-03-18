@@ -2,6 +2,9 @@
  AppleScripts for Emacs
 ========================
 
+[2015-03-18 Wed] This repo is moved to `OSA Scripts
+<https://github.com/leoliu/osascripts>`_.
+
 This collection of applescript-based elisp functions was born mostly
 out of the need to access personal data from anywhere, which has
 become increasingly important in this mobile and cloud age.
